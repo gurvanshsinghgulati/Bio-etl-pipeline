@@ -1,41 +1,67 @@
-# 🧬 Bio-ETL Pipeline: Gene Expression Processing Framework
+# Bio-ETL Pipeline: Gene Expression Processing
 
-A modular, automated **Extract, Load, Transform (ELT/ETL)** pipeline architected to ingest high-throughput differential gene expression metadata, store it within a relational datastore, and generate automated diagnostic visualizations.
+A small ETL (Extract, Transform, Load) pipeline that loads gene expression
+data from a CSV file into a SQLite database, then analyzes and visualizes
+expression levels across samples.
 
-## 🏗️ System Architecture
-The framework processes laboratory datasets through a fully decoupled three-tier architectural cycle:
-1. **Extract & Clean (Data Ingestion)**: Parses raw file systems (`sample_gene_expression.csv`) using defensive coding structures to handle type transformations safely.
-2. **Relational Orchestration (Storage)**: Clears obsolete indices and bulk-inserts records into a transactional, indexing-ready schema within an SQLite engine (`gene_data.db`).
-3. **Transform & Analytics (Data Visualization)**: Queries analytical database layers to aggregate statistical expression trends across dynamic multi-sample metrics.
+## What it does
 
-## 📊 Analytical Pipeline Insights
-The pipeline computes structured aggregations down to specific biological markers:
-* **Overexpression Identifiers**: Flags critical oncogenes (e.g., *EGFR* showing heightened spikes scaling above a 25.0 metric score).
-* **Suppression Trackers**: Maps baseline expression properties of tumor-suppressive indicators (e.g., *PTEN* monitoring consistent structural constraints lower than a 6.5 value boundary).
+1. **Load** (`create_table.py`, `load_data.py`): Reads gene expression data
+   from `sample_gene_expression.csv`, converts fields to the correct data
+   types (integers, floats), and loads it into a SQLite database
+   (`gene_data.db`). Re-running the loader clears old data first, so it can
+   be safely run multiple times without creating duplicates.
+2. **Analyze** (`analyze_data.py`): Calculates the average expression value
+   per gene (across all samples) and flags any gene whose average exceeds
+   a threshold (currently 15) as "high expression."
+3. **Visualize** (`plot_data.py`): Reads the data back out with pandas and
+   generates a grouped bar chart (using seaborn) comparing expression
+   levels across genes and samples, saved as `gene_expression_chart.png`.
 
-## 🛠️ Deployment & Execution Setup
+## Example output
 
-### 1. Environmental Infrastructure Prerequisites
-Ensure dependencies are bound correctly to your runtime system environment:
+```
+Average expression per gene:
+BRCA1    12.47
+EGFR     22.33
+KRAS     14.63
+MYC      18.70
+PTEN      5.47
+TP53      8.80
+
+Genes with high average expression (above 15):
+⚠️ EGFR: 22.33
+⚠️ MYC: 18.70
+```
+
+## Setup
+
 ```bash
 pip install pandas matplotlib seaborn
 ```
 
-### 2. Operational Ingestion Phase
-Populate the transactional database target structures:
+## Usage
+
+Run these in order:
+
 ```bash
-python3 load_data.py
+python create_table.py    # creates the database schema
+python load_data.py       # loads the CSV data into the database
+python analyze_data.py    # prints average expression and flags high-expression genes
+python plot_data.py       # generates the bar chart
 ```
 
-### 3. Analytics & Figure Generation Trigger
-Execute the reporting module to compile vector graphics charts:
-```bash
-python3 plot_data.py
-```
+## Files
 
-## 📂 Repository Registry & Structural Layout
-* `load_data.py` — High-efficiency CSV batch loader engine.
-* `plot_data.py` — SQL analytic compiler and chart plotter script.
-* `sample_gene_expression.csv` — Baseline dataset simulating multi-sample micro-array outputs.
-* `gene_expression_chart.png` — Output visualization asset.
-* `.gitignore` — Runtime exclusions register.
+- `create_table.py` — creates the `expression_data` table
+- `load_data.py` — loads and cleans CSV data into the database
+- `analyze_data.py` — calculates per-gene averages and flags high expression
+- `plot_data.py` — generates the comparison bar chart
+- `sample_gene_expression.csv` — sample dataset (6 genes x 3 samples)
+- `gene_expression_chart.png` — generated chart output
+- `.gitignore` — excludes the generated database file from version control
+
+## Notes
+
+Currently uses a small hand-crafted sample dataset. A planned next step is
+to swap this for real gene expression data pulled from NCBI GEO.
